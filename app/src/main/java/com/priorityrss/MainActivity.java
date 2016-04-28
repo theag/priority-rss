@@ -1,8 +1,15 @@
 package com.priorityrss;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.xmlpull.v1.XmlPullParser;
@@ -18,29 +25,74 @@ import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
 
-    private TextView txtRss;
+    //private TextView txtRss;
     private TextView txtProgress;
+    private SwipeRefreshLayout refresh;
+    private FeedItemAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        txtRss = (TextView)findViewById(R.id.text_rss);
+        //txtRss = (TextView)findViewById(R.id.text_rss);
         txtProgress = (TextView)findViewById(R.id.text_progress);
+        refresh = (SwipeRefreshLayout)findViewById(R.id.swipeRefresh);
+        refresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                updateFeed();
+            }
+        });
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        refresh.setRefreshing(true);
+        updateFeed();
+    }
+
+    private void updateFeed() {
         try {
             URL url = new URL("http://rss.cbc.ca/lineup/topstories.xml");
-            new GetRssFeedTask().execute(url);
+            new GetRssFeedTaskv2().execute(url);
         } catch (MalformedURLException e) {
             e.printStackTrace();
             txtProgress.setText("Sync Failed");
+
+        } finally {
+            refresh.setRefreshing(false);
         }
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_refresh:
+                refresh.setRefreshing(true);
+                updateFeed();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    public void feedItemClick(View view) {
+        TextView tv = (TextView)view.findViewById(R.id.hidden_position);
+        int position = Integer.parseInt(tv.getText().toString());
+        RssFeed.Item item = adapter.getItem(position);
+        item.setRead(true);
+        Intent intent = new Intent(this, ViewItemActivity.class);
+        intent.putExtra(ViewItemActivity.ARG_URL, item.getLink());
+        startActivity(intent);
+    }
 
     private String getRssFeed(URL url) throws IOException {
         HttpURLConnection conn = (HttpURLConnection)url.openConnection();
@@ -77,6 +129,7 @@ public class MainActivity extends AppCompatActivity {
             xpp.setInput(in, "UTF_8");
             int eventType = xpp.getEventType();
             boolean insideItem = false;
+            boolean insideImage = false;
             RssFeed.Item item = null;
             while(eventType != XmlPullParser.END_DOCUMENT) {
                 if(eventType == XmlPullParser.START_TAG) {
@@ -86,19 +139,30 @@ public class MainActivity extends AppCompatActivity {
                     } else if(xpp.getName().equalsIgnoreCase("title")) {
                         if(insideItem) {
                             item.setTitle(xpp.nextText());
-                        } else if(xpp.getDepth() == 3) {
+                        } else if(!insideImage) {
                             feed.setTitle(xpp.nextText());
-                            //System.out.println("title: " + xpp.getDepth() + ": " + feed.getTitle());
                         }
+                    } else if(xpp.getName().equalsIgnoreCase("image") && !insideItem) {
+                        insideImage = true;
+                    } else if(xpp.getName().equalsIgnoreCase("url") && insideImage) {
+                        feed.setImageURL(xpp.nextText());
                     } else if(xpp.getName().equalsIgnoreCase("link") && insideItem) {
                         item.setLink(xpp.nextText());
                     } else if(xpp.getName().equalsIgnoreCase("description") && insideItem) {
                         item.setDescription(xpp.nextText());
+                    } else if(xpp.getName().equalsIgnoreCase("pubDate") && insideItem) {
+                        item.setPublishedDate(xpp.nextText());
+                    } else if(insideItem) {
+                        item.addOther(xpp.getName(), xpp.nextText());
                     }
-                } else if(eventType == XmlPullParser.END_TAG && xpp.getName().equalsIgnoreCase("item")) {
-                    feed.addItem(item);
-                    item = null;
-                    insideItem = false;
+                } else if(eventType == XmlPullParser.END_TAG) {
+                    if(xpp.getName().equalsIgnoreCase("item")) {
+                        feed.addItem(item);
+                        item = null;
+                        insideItem = false;
+                    } else if(xpp.getName().equalsIgnoreCase("image")) {
+                        insideImage = false;
+                    }
                 }
                 eventType = xpp.next();
             }
@@ -119,11 +183,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void postFeed(String s) {
-        txtRss.setText(s);
+        //txtRss.setText(s);
     }
 
     private void postFeedv2(RssFeed feed) {
-        txtRss.setText(feed.getTextDisplay());
+        //txtRss.setText(feed.getTextDisplay());
+        adapter = new FeedItemAdapter(this, feed.getItems());
+        ListView lv = (ListView)findViewById(R.id.listView);
+        lv.setAdapter(adapter);
     }
 
     private class GetRssFeedTask extends AsyncTask<URL, Integer, String[]> {

@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Priority RSS</string>
+    <string name="refresh">Refresh</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="share">Share</string>
+    <string name="copy_url">Copy URL</string>
 </resources>

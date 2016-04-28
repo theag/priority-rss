@@ -10,17 +10,30 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.priorityrss.MainActivity">
 
-    <ScrollView
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <TextView
-            android:id="@+id/text_rss"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+        <!--<ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-    </ScrollView>
+            <TextView
+                android:id="@+id/text_rss"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </ScrollView>-->
+
+        <ListView
+            android:id="@+id/listView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"></ListView>
+
+    </android.support.v4.widget.SwipeRefreshLayout>
 
     <TextView
         android:id="@+id/text_progress"
