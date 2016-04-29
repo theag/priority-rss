@@ -1,8 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/switch_unread_only"
+        app:showAsAction="ifRoom"
+        android:title="@string/unread_only"
+        android:icon="@drawable/circle_outline_24dp"
+        android:checkable="true"
+        android:checked="false"/>
+
+    <item
+        android:id="@+id/action_edit_feeds"
+        app:showAsAction="never"
+        android:title="@string/edit_feeds"/>
+
     <item
         android:id="@+id/action_refresh"
         app:showAsAction="never"
         android:title="@string/refresh"/>
+
+
 </menu>

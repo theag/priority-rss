@@ -4,4 +4,9 @@
     <string name="open_in_browser">Open in browser</string>
     <string name="share">Share</string>
     <string name="copy_url">Copy URL</string>
+    <string name="edit_feeds">Edit feeds</string>
+    <string name="url">Enter URL</string>
+    <string name="unread_only">Unread only</string>
+    <string name="is_read">Is read</string>
+    <string name="star">Star</string>
 </resources>

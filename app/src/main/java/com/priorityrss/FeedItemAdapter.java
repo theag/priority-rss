@@ -1,11 +1,9 @@
 package com.priorityrss;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
-import android.text.Editable;
-import android.text.Html;
+import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +12,7 @@ import android.widget.ImageView;
 import android.widget.ListAdapter;
 import android.widget.TextView;
 
-import org.xml.sax.XMLReader;
+import com.priorityrss.feeds.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,15 +27,21 @@ import java.util.Collections;
 public class FeedItemAdapter extends BaseAdapter implements ListAdapter {
 
     private Context context;
-    private ArrayList<RssFeed.Item> items;
+    private ArrayList<Item> items;
     private Calendar now;
+    private boolean unreadOnly;
+    private Integer defaultTextColour;
 
-    public FeedItemAdapter(Context context, ArrayList<RssFeed.Item> items) {
+    public FeedItemAdapter(Context context) {
         this.context = context;
-        this.items = new ArrayList<>();
-        this.items.addAll(items);
-        Collections.sort(this.items);
         now = Calendar.getInstance();
+        unreadOnly = false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            defaultTextColour = context.getColor(android.R.color.secondary_text_light);
+        } else {
+            defaultTextColour = context.getResources().getColor(android.R.color.secondary_text_light);
+        }
+        updateList();
     }
 
     @Override
@@ -46,7 +50,7 @@ public class FeedItemAdapter extends BaseAdapter implements ListAdapter {
     }
 
     @Override
-    public RssFeed.Item getItem(int position) {
+    public Item getItem(int position) {
         return items.get(position);
     }
 
@@ -58,21 +62,24 @@ public class FeedItemAdapter extends BaseAdapter implements ListAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         View view = convertView;
-        if(view == null) {
+        //if(view == null) {
             LayoutInflater inflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             view = inflater.inflate(R.layout.list_item_feed_item, null);
-        }
+        //}
 
         TextView tv = (TextView)view.findViewById(R.id.hidden_position);
         tv.setText(""+position);
 
-        RssFeed.Item item = getItem(position);
+        Item item = getItem(position);
 
         tv = (TextView)view.findViewById(R.id.text_title);
-        tv.setText(item.getTitle());
         if(!item.isRead()) {
             tv.setTextColor(0xFF000000);
+        } else {
+            tv.setTextColor(0xFF737373);
         }
+        tv.setText(item.getTitle());
+
 
         tv = (TextView)view.findViewById(R.id.text_description);
         tv.setText(item.getDisplayDescription());
@@ -87,6 +94,12 @@ public class FeedItemAdapter extends BaseAdapter implements ListAdapter {
         tv = (TextView)view.findViewById(R.id.text_feed_title);
         tv.setText(item.getFeedTitle());
 
+        if(item.isStarred()) {
+            view.findViewById(R.id.image_star).setVisibility(View.VISIBLE);
+        } else {
+            view.findViewById(R.id.image_star).setVisibility(View.INVISIBLE);
+        }
+
         tv = (TextView)view.findViewById(R.id.text_time);
         long diff = Math.round(Math.floor((now.getTimeInMillis() - item.getPubDate().getTimeInMillis())/1000.0/60.0));
         if(diff == 1) {
@@ -95,8 +108,16 @@ public class FeedItemAdapter extends BaseAdapter implements ListAdapter {
             tv.setText(diff +" minutes ago");
         } else if(diff < 120) {
             tv.setText(Math.round(Math.floor(diff/60.0)) +" hour ago");
-        } else {
+        } else if(diff < 1440) {
             tv.setText(Math.round(Math.floor(diff/60.0)) +" hours ago");
+        } else if(diff < 2880) {
+            tv.setText(Math.round(Math.floor(diff/60.0/24.0)) +" day ago");
+        } else if(diff < 525600) {
+            tv.setText(Math.round(Math.floor(diff/60.0/24.0)) +" days ago");
+        } else if(diff < 1051200) {
+            tv.setText(Math.round(Math.floor(diff/60.0/24.0/365.0)) +" year ago");
+        } else {
+            tv.setText(Math.round(Math.floor(diff/60.0/24.0/365.0)) +" years ago");
         }
         return view;
     }
@@ -104,6 +125,17 @@ public class FeedItemAdapter extends BaseAdapter implements ListAdapter {
     private void setImageDrawable(int position, Drawable result) {
         getItem(position).setFeedImage(result);
         this.notifyDataSetChanged();
+    }
+
+    public void setUnreadOnly(boolean unreadOnly) {
+        this.unreadOnly = unreadOnly;
+        updateList();
+    }
+
+    public void updateList() {
+        FeedAggregator aggregator = FeedAggregator.getInstance();
+        items = aggregator.getAllItems(unreadOnly);
+        notifyDataSetInvalidated();
     }
 
     private class ImageGetterTask extends AsyncTask<String, Void, Drawable> {

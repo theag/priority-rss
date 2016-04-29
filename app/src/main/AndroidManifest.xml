@@ -17,8 +17,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ViewItemActivity"
-            android:parentActivityName=".MainActivity"></activity>
+        <activity
+            android:name=".ViewItemActivity"
+            android:parentActivityName=".MainActivity" />
+        <activity android:name=".FeedControlActivity"
+            android:parentActivityName=".FeedControlActivity"></activity>
     </application>
 
 </manifest>

@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/switch_is_read"
+        app:showAsAction="ifRoom"
+        android:title="@string/is_read"
+        android:icon="@drawable/circle_24dp"
+        android:checkable="true"
+        android:checked="true"/>
+
+    <item
+        android:id="@+id/switch_star"
+        app:showAsAction="ifRoom"
+        android:title="@string/star"
+        android:icon="@drawable/ic_star_outline_24dp"
+        android:checkable="true"
+        android:checked="false"/>
+
     <item
         android:id="@+id/action_open_in_browser"
         android:icon="@drawable/ic_open_in_browser_24dp"
